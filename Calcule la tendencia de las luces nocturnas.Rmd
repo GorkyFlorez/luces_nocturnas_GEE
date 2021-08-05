@@ -1,0 +1,104 @@
+---
+title: "Calcule la tendencia de las luces nocturnas"
+author: "Gorky Florez Castillo"
+date: "4/8/2021"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: cerulean
+---
+```{r setup, include=FALSE}
+# Instalar librerias ------------------------------------------------------------
+# install.packages("googledrive")
+# install.packages("rgee")
+library(googledrive)
+library(rgee)
+library(mapedit)
+library(tibble)
+library(sf)
+library(cptcity)
+# Instalar rtools---------------------------------------------------------
+# rtools
+# Sys.which("make")
+# Paquete de rgee
+#ee_install()
+
+# Nos pedira si queremos instalar miniconda dareos Y
+# Creara un nuevo entorn Python
+# Nos pedira reiniciar la consola daremos 1
+# Instalar rtools---------------------------------------------------------
+# Iniciamos nuestra cuenta de Rgee
+ee_Initialize("gflorezc", drive = T)
+# -------------------------------Calcule la tendencia de las luces nocturnas--------------------------
+# Agrega una banda que contiene la fecha de la imagen como años desde 1991.
+createTimeBand <-function(img) {
+               year <- ee$Date(img$get('system:time_start'))$get('year')$subtract(1991L)
+               ee$Image(year)$byte()$addBands(img)}
+
+# Asigne el asistente de creación de franjas horarias sobre la colección de luces nocturnas .
+# https://developers.google.com/earth-engine/datasets/catalog/NOAA_DMSP-OLS_NIGHTTIME_LIGHTS
+collection <- ee$                                                           # Seleccionamos la coleccion de
+                ImageCollection('NOAA/DMSP-OLS/NIGHTTIME_LIGHTS')$          # Sistema operativo de exploración de líneas del programa meteorológico de defensa
+                select('stable_lights')$
+                map(createTimeBand)
+
+# Calcule un ajuste lineal sobre la serie de valores en cada píxel, visualizando la intersección con el eje y en verde y las pendientes positivas / negativas como rojo / azul.
+col_reduce <- collection$reduce(ee$Reducer$linearFit())
+col_reduce <- col_reduce$addBands(
+              col_reduce$select('scale'))
+```
+
+Google Earth Engine en RStudio
+===================================== 
+
+Column {data-width=550}
+-----------------------------------------------------------------------
+
+### Mapa de luces nocturnas en Sur America
+```{r map}
+Map$setCenter(-74.8773, -11.54012,3) 
+Map$addLayer( eeObject = col_reduce,
+             visParams = list(
+             bands = c("scale", "offset", "scale"),
+             min = 0,
+             max = c(0.18, 20, -0.18)),
+             name = "stable lights trend")
+
+```
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Mapa de luces nocturnas del Peru 
+```{r map1}
+Map$setCenter(-74.8773, -11.54012,5) 
+Map$addLayer( eeObject = col_reduce,
+             visParams = list(
+             bands = c("scale", "offset", "scale"),
+             min = 0,
+             max = c(0.18, 20, -0.18)),
+             name = "stable lights trend")
+```
+
+### Mapa de luces nocturnas de Lima
+
+```{r fig.width=8, fig.height=6}
+Map$setCenter(-76.803419,-12.053487 ,7) 
+Map$addLayer( eeObject = col_reduce,
+             visParams = list(
+             bands = c("scale", "offset", "scale"),
+             min = 0,
+             max = c(0.18, 20, -0.18)),
+             name = "stable lights trend")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
